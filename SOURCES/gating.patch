@@ -1,0 +1,54 @@
+diff -ru ibus-typing-booster-2.1.0.orig/tests/run_tests.in ibus-typing-booster-2.1.0/tests/run_tests.in
+--- ibus-typing-booster-2.1.0.orig/tests/run_tests.in	2018-06-05 11:32:44.000000000 +0200
++++ ibus-typing-booster-2.1.0/tests/run_tests.in	2020-06-09 17:52:21.789989905 +0200
+@@ -21,6 +21,21 @@
+ import sys
+ import unittest
+ 
++# pip3 install tap.py --user
++IMPORT_TAP_SUCCESSFUL = False
++try:
++    from tap import TAPTestRunner
++    IMPORT_TAP_SUCCESSFUL = True
++except (ImportError,):
++    pass
++
++if 'IBUS_TYPING_BOOSTER_LOCATION' in os.environ:
++    location_path = os.environ['IBUS_TYPING_BOOSTER_LOCATION']
++    if location_path != None and location_path != '':
++        engine_path = os.path.join(location_path, 'engine')
++        sys.path.append(engine_path)
++sys.path.append('/usr/share/ibus-typing-booster/engine')
++
+ from gi import require_version
+ require_version('IBus', '1.0')
+ from gi.repository import IBus
+@@ -182,10 +197,25 @@
+ sys.modules["gi.repository.IBus"].PropList = MockPropList
+ 
+ # -- Load and run our unit tests ---------------------------------------------
+-os.environ['IBUS_TYPING_BOOSTER_DEBUG_LEVEL'] = '255'
++pattern = 'test*.py'
++start_dir = os.path.dirname(__file__)
++if len(sys.argv) > 1:
++    pattern = sys.argv[-1]
++    dir = os.path.dirname(pattern)
++    pattern = os.path.basename(pattern)
++    if dir != '.':
++        start_dir = os.path.join(start_dir, dir)
+ loader = unittest.TestLoader()
+-suite = loader.discover(".")
+-runner = unittest.TextTestRunner(stream = sys.stderr, verbosity = 255)
++suite = loader.discover(start_dir=start_dir, pattern=pattern)
++
++if IMPORT_TAP_SUCCESSFUL:
++    runner = TAPTestRunner(stream=sys.stderr, verbosity=255)
++    runner.set_outdir('.')
++    runner.set_format('Hi: {method_name} - {short_description}')
++    runner.set_combined(True)
++else:
++    runner = unittest.TextTestRunner(stream=sys.stderr, verbosity=255)
++
+ result = runner.run(suite)
+ 
+ if result.failures or result.errors:
