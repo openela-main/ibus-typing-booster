@@ -1,0 +1,50 @@
+From 956b0cf51f7d3803bb605695c4ccc6fea77524a8 Mon Sep 17 00:00:00 2001
+From: Mike FABIAN <mfabian@redhat.com>
+Date: Thu, 27 Feb 2020 15:50:37 +0100
+Subject: [PATCH] =?UTF-8?q?Prevent=20also=20BackSpace=20from=20reopening?=
+ =?UTF-8?q?=20a=20preedit=20when=20the=20option=20=E2=80=9CArrow=20keys=20?=
+ =?UTF-8?q?can=20reopen=20a=20preedit=E2=80=9D=20is=20off?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reopening the preedit is so terribly buggy, especially under Gnome Wayland
+but also in many other applications.
+
+Often surrounding text is reported as supported by the application but
+ibus-typing-booster then gets completely wrong results when querying
+the surrounding text. Without properly working surrounding text,
+reopening a preedit cannot work correctly either.
+
+Until now this option switched reopening the preedit on and off only for the arrow keys.
+So even when this was switched off for the arrow keys, it was still causing problems
+when using backspace in case of broken support for surrounding text.
+
+Now reopening preedits is disabled completely when this option is off, which is
+better in most cases as surrounding text is so terribly broken.
+
+One can still turn it on, it might be helpful in some cases where
+surrounding text works reasonably well (e.g. in gedit when using Xorg
+and not Wayland). But in most cases it is unfortunately better to
+switch this off.
+---
+ engine/hunspell_table.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/engine/hunspell_table.py b/engine/hunspell_table.py
+index 9214254..e3b61cf 100644
+--- a/engine/hunspell_table.py
++++ b/engine/hunspell_table.py
+@@ -2396,7 +2396,8 @@ class TypingBoosterEngine(IBus.Engine):
+             return self._return_false(key.val, key.code, key.state)
+         if (not self._arrow_keys_reopen_preedit
+                 and key.val in (IBus.KEY_Left, IBus.KEY_KP_Left,
+-                                IBus.KEY_Right, IBus.KEY_KP_Right)):
++                                IBus.KEY_Right, IBus.KEY_KP_Right,
++                                IBus.KEY_BackSpace)):
+             # using arrows key to reopen the preëdit is disabled
+             return self._return_false(key.val, key.code, key.state)
+         if (key.shift
+-- 
+2.29.2
+
